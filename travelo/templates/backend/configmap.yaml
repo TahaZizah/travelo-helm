@@ -1,0 +1,12 @@
+{{- if .Values.backend.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: travelo-backend-config
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "travelo.backend.labels" . | nindent 4 }}
+data:
+  SPRING_DATASOURCE_URL: {{ .Values.backend.datasource.url | quote }}
+  SPRING_DATASOURCE_USERNAME: {{ .Values.backend.datasource.username | quote }}
+{{- end }}

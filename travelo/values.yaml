@@ -1,0 +1,176 @@
+# Global settings
+global:
+  namespace: helm
+
+# MySQL Configuration
+mysql:
+  enabled: true
+  image:
+    repository: mysql
+    tag: "8.4"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 3306
+  
+  auth:
+    rootPassword: "rootpassword123"
+    database: "travelo_db"
+    username: "travelo_user"
+    password: "travelo_password123"
+  
+  persistence:
+    enabled: true
+    storageClass: ""
+    size: 10Gi
+  
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+# Backend Configuration
+backend:
+  enabled: true
+  replicaCount: 2
+  
+  image:
+    repository: anasslpro/travelo_backend
+    tag: "v5"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 8080
+    targetPort: 8080
+  
+  datasource:
+    url: "jdbc:mysql://travelo-mysql:3306/travelo_db"
+    username: "travelo_user"
+    password: "travelo_password123"
+  
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+  
+  livenessProbe:
+    enabled: true
+    httpGet:
+      path: /api/hello
+      port: 8080
+    initialDelaySeconds: 60
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  
+  readinessProbe:
+    enabled: true
+    httpGet:
+      path: /api/hello
+      port: 8080
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+
+# Frontend Configuration
+frontend:
+  enabled: true
+  replicaCount: 2
+  
+  image:
+    repository: mohamedkhalilassaddiki/travelo-frontend
+    tag: "v3"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 80
+  
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+  
+  livenessProbe:
+    enabled: true
+    httpGet:
+      path: /
+      port: 80
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  
+  readinessProbe:
+    enabled: true
+    httpGet:
+      path: /
+      port: 80
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
+# Proxy Configuration (Nginx Reverse Proxy)
+proxy:
+  enabled: true
+  replicaCount: 1
+  
+  image:
+    repository: nginx
+    tag: "alpine3.22-slim"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: LoadBalancer
+    port: 80
+    targetPort: 80
+  
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+  
+  nginxConfig: |
+    events {
+        worker_connections 1024;
+    }
+    http {
+        upstream frontend {
+            server travelo-frontend:80;
+        }
+        upstream backend {
+            server travelo-backend:8080;
+        }
+        server {
+            listen 80;
+            server_name localhost;
+            
+            location / {
+                proxy_pass http://frontend;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+            
+            location /api/ {
+                proxy_pass http://backend;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+        }
+    }

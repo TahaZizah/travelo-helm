@@ -1,0 +1,16 @@
+apiVersion: v2
+name: travelo
+description: A Helm chart for Travelo flight booking application
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - travelo
+  - flight-booking
+  - react
+  - spring-boot
+maintainers:
+  - name: Travelo Team
+    email: contact@travelo.com
+sources:
+  - https://github.com/TahaZizah/travelo-helm

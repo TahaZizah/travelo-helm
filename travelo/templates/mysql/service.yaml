@@ -1,0 +1,19 @@
+{{- if .Values.mysql.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: travelo-mysql
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "travelo.mysql.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.mysql.service.type }}
+  ports:
+  - port: {{ .Values.mysql.service.port }}
+    targetPort: mysql
+    protocol: TCP
+    name: mysql
+  selector:
+    app.kubernetes.io/name: {{ include "travelo.name" . }}
+    app.kubernetes.io/component: mysql
+{{- end }}
